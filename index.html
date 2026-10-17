@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Representación Espacial VR - Controles en VR</title>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <style>
+    /* Panel 2D adicional solo para pruebas en PC */
+    .panel-pc {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 999;
+      background: rgba(44, 62, 80, 0.85);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-family: sans-serif;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="panel-pc">
+    <strong>En PC:</strong> Usa el ratón para hacer clic en el tablero 3D o en las celdas.<br>
+    <strong>En Meta Quest 3:</strong> Apunta el rayo del mando al panel flotante 3D y usa el gatillo.
+  </div>
+
+  <a-scene webxr="optionalFeatures: hit-test, hand-tracking">
+    <!-- Entorno e Iluminación -->
+    <a-sky color="#edf2f7"></a-sky>
+    <a-ambient-light color="#ffffff" intensity="0.85"></a-ambient-light>
+    <a-directional-light position="2 4 2" intensity="0.6"></a-directional-light>
+
+    <!-- Puntero para PC (Ratón) -->
+    <a-entity cursor="rayOrigin: mouse" raycaster="objects: .interactuable"></a-entity>
+
+    <!-- MANDOS CON LÁSER VISIBLE EN META QUEST 3 -->
+    <a-entity id="leftHand" 
+              hand-controls="hand: left" 
+              laser-controls="hand: left" 
+              raycaster="objects: .interactuable; showLine: true; far: 5" 
+              line="color: #3498db; opacity: 0.8">
+    </a-entity>
+    
+    <a-entity id="rightHand" 
+              hand-controls="hand: right" 
+              laser-controls="hand: right" 
+              raycaster="objects: .interactuable; showLine: true; far: 5" 
+              line="color: #3498db; opacity: 0.8">
+    </a-entity>
+
+    <!-- ESCENA PRINCIPAL (TRIEDRO + BLOQUES) -->
+    <a-entity id="escena-diedro" position="0 1.5 -0.9">
+
+      <!-- 1. PLANO VERTICAL (PV) -->
+      <a-plane position="0 0.4 0" rotation="0 0 0" width="0.8" height="0.8" color="#3498db" opacity="0.3" side="double">
+        <a-text value="PV (Plano Vertical)" align="center" position="0 0.35 0.01" scale="0.25 0.25 0.25" color="#1a5276"></a-text>
+      </a-plane>
+
+      <!-- 2. PLANO HORIZONTAL (PH) -->
+      <a-entity id="eje-ph" position="0 0 0">
+        <a-plane id="plano-ph" position="0 0 0.4" rotation="-90 0 0" width="0.8" height="0.8" color="#2ecc71" opacity="0.3" side="double">
+          <a-text value="PH (Plano Horizontal)" align="center" position="0 -0.35 0.01" scale="0.25 0.25 0.25" color="#196f3d"></a-text>
+        </a-plane>
+      </a-entity>
+
+      <!-- 3. PLANO PERFIL IZQUIERDO (PPI) -->
+      <a-entity id="eje-ppi" position="-0.4 0.4 0">
+        <a-plane id="plano-ppi" position="0 0 0.4" rotation="0 90 0" width="0.8" height="0.8" color="#e74c3c" opacity="0.3" side="double">
+          <a-text value="Perfil Izquierdo" align="center" position="0 0.35 0.01" scale="0.23 0.23 0.23" color="#78281f"></a-text>
+        </a-plane>
+      </a-entity>
+
+      <!-- 4. PLANO PERFIL DERECHO (PPD) -->
+      <a-entity id="eje-ppd" position="0.4 0.4 0">
+        <a-plane id="plano-ppd" position="0 0 0.4" rotation="0 -90 0" width="0.8" height="0.8" color="#9b59b6" opacity="0.3" side="double">
+          <a-text value="Perfil Derecho" align="center" position="0 0.35 0.01" scale="0.23 0.23 0.23" color="#4a235a"></a-text>
+        </a-plane>
+      </a-entity>
+
+      <!-- LÍNEA DE TIERRA (LT) -->
+      <a-cylinder position="0 0 0" rotation="0 0 90" radius="0.006" height="1.6" color="#2c3e50"></a-cylinder>
+
+      <!-- BASE DE CONSTRUCCIÓN INTERACTIVA (GRID) -->
+      <a-entity id="base-grid" position="0 0.001 0.4" rotation="-90 0 0"></a-entity>
+
+      <!-- CONTENEDOR DE BLOQUES CONSTRUIDOS -->
+      <a-entity id="contenedor-bloques"></a-entity>
+
+      <!-- ========================================== -->
+      <!-- TABLERO DE CONTROLES 3D (VISIBLE EN VR)     -->
+      <!-- ========================================== -->
+      <a-entity id="panel-3d" position="-0.7 0.3 0.2" rotation="0 25 0">
+        <!-- Fondo del tablero -->
+        <a-plane width="0.45" height="0.85" color="#2c3e50" opacity="0.9" side="double">
+          <a-text value="CONTROLES VR" align="center" position="0 0.37 0.01" scale="0.25 0.25 0.25" color="#ffffff"></a-text>
+
+          <!-- Botón Cubo -->
+          <a-plane id="b3d-cubo" class="interactuable" position="0 0.26 0.01" width="0.38" height="0.08" color="#27ae60"
+                   animation__hover="property: scale; to: 1.05 1.05 1; startEvents: mouseenter; dur: 100"
+                   animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100">
+            <a-text id="txt-cubo" value="[X] MODULO CUBO" align="center" position="0 0 0.01" scale="0.2 0.2 0.2" color="#ffffff"></a-text>
+          </a-plane>
+
+          <!-- Botón Cuña -->
+          <a-plane id="b3d-cuna" class="interactuable" position="0 0.16 0.01" width="0.38" height="0.08" color="#34495e"
+                   animation__hover="property: scale; to: 1.05 1.05 1; startEvents: mouseenter; dur: 100"
+                   animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100">
+            <a-text id="txt-cuna" value="MODULO CUNA" align="center" position="0 0 0.01" scale="0.2 0.2 0.2" color="#ffffff"></a-text>
+          </a-plane>
+
+          <!-- Botón Borrar -->
+          <a-plane id="b3d-borrar" class="interactuable" position="0 0.06 0.01" width="0.38" height="0.08" color="#34495e"
+                   animation__hover="property: scale; to: 1.05 1.05 1; startEvents: mouseenter; dur: 100"
+                   animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100">
+            <a-text id="txt-borrar" value="BORRAR BLOQUE" align="center" position="0 0 0.01" scale="0.2 0.2 0.2" color="#ffffff"></a-text>
+          </a-plane>
+
+          <!-- Ajuste de Altura -->
+          <a-plane id="b3d-subir" class="interactuable" position="-0.1 0.06 -0.08" width="0.17" height="0.07" color="#8e44ad"
+                   animation__hover="property: scale; to: 1.05 1.05 1; startEvents: mouseenter; dur: 100"
+                   animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100">
+            <a-text value="Subir" align="center" position="0 0 0.01" scale="0.18 0.18 0.18" color="#ffffff"></a-text>
+          </a-plane>
+
+          <a-plane id="b3d-bajar" class="interactuable" position="0.1 0.06 -0.08" width="0.17" height="0.07" color="#8e44ad"
+                   animation__hover="property: scale; to: 1.05 1.05 1; startEvents: mouseenter; dur: 100"
+                   animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100">
+            <a-text value="Bajar" align="center" position="0 0 0.01" scale="0.18 0.18 0.18" color="#ffffff"></a-text>
+          </a-plane>
+
+          <!-- Ajuste de Distancia (Zoom Cerca / Lejos) -->
+          <a-plane id="b3d-cerca" class="interactuable" position="-0.1 -0.05 0.01" width="0.17" height="0.07" color="#d35400"
+                   animation__hover="property: scale; to: 1.05 1.05 1; startEvents: mouseenter; dur: 100"
+                   animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100">
+            <a-text value="+ Cerca" align="center" position="0 0 0.01" scale="0.18 0.18 0.18" color="#ffffff"></a-text>
+          </a-plane>
+
+          <a-plane id="b3d-lejos" class="interactuable" position="0.1 -0.05 0.01" width="0.17" height="0.07" color="#d35400"
+                   animation__hover="property: scale; to: 1.05 1.05 1; startEvents: mouseenter; dur: 100"
+                   animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100">
+            <a-text value="+ Lejos" align="center" position="0 0 0.01" scale="0.18 0.18 0.18" color="#ffffff"></a-text>
+          </a-plane>
+
+          <!-- Botón de Abatimiento -->
+          <a-plane id="b3d-abatir" class="interactuable" position="0 -0.22 0.01" width="0.38" height="0.1" color="#2980b9"
+                   animation__hover="property: scale; to: 1.05 1.05 1; startEvents: mouseenter; dur: 100"
+                   animation__leave="property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100">
+            <a-text value="ABATIR MONTEA" align="center" position="0 0 0.01" scale="0.22 0.22 0.22" color="#ffffff"></a-text>
+          </a-plane>
+        </a-plane>
+      </a-entity>
+
+    </a-entity>
+
+    <!-- CÁMARA VR -->
+    <a-entity position="0 0 0">
+      <a-camera look-controls="enabled: true" wasd-controls="enabled: true"></a-camera>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    let herramientaActual = 'cubo';
+    let abatido = false;
+    let posX = 0, posY = 1.5, posZ = -0.9;
+    const TAMANO_BLOQUE = 0.1;
+
+    // Actualizar posición del triedro en el espacio VR
+    function actualizarPosicionEscena() {
+      const escena = document.querySelector('#escena-diedro');
+      escena.setAttribute('position', `${posX} ${posY.toFixed(2)} ${posZ.toFixed(2)}`);
+    }
+
+    // Inicializar Grilla y Eventos del Tablero 3D
+    window.addEventListener('load', () => {
+      const grid = document.querySelector('#base-grid');
+      
+      // Crear celdas de la grilla (4x4)
+      for (let x = -0.3; x <= 0.3; x += TAMANO_BLOQUE) {
+        for (let z = -0.3; z <= 0.3; z += TAMANO_BLOQUE) {
+          const celda = document.createElement('a-plane');
+          celda.setAttribute('position', `${x.toFixed(2)} ${z.toFixed(2)} 0`);
+          celda.setAttribute('width', TAMANO_BLOQUE * 0.95);
+          celda.setAttribute('height', TAMANO_BLOQUE * 0.95);
+          celda.setAttribute('color', '#ffffff');
+          celda.setAttribute('opacity', '0.25');
+          celda.setAttribute('class', 'interactuable');
+          
+          // Animación al apuntar con el láser en VR
+          celda.setAttribute('animation__hover', 'property: opacity; to: 0.6; startEvents: mouseenter; dur: 100');
+          celda.setAttribute('animation__leave', 'property: opacity; to: 0.25; startEvents: mouseleave; dur: 100');
+
+          celda.addEventListener('click', (evt) => {
+            evt.stopPropagation();
+            if (herramientaActual !== 'borrar') {
+              const cx = parseFloat(celda.getAttribute('position').x);
+              const cz = parseFloat(celda.getAttribute('position').y);
+              colocarBloque(cx, 0.05, cz);
+            }
+          });
+          grid.appendChild(celda);
+        }
+      }
+
+      // Configurar interacción de los botones del Panel 3D
+      document.querySelector('#b3d-cubo').addEventListener('click', () => setHerramienta('cubo'));
+      document.querySelector('#b3d-cuna').addEventListener('click', () => setHerramienta('cuna'));
+      document.querySelector('#b3d-borrar').addEventListener('click', () => setHerramienta('borrar'));
+
+      document.querySelector('#b3d-subir').addEventListener('click', () => { posY += 0.1; actualizarPosicionEscena(); });
+      document.querySelector('#b3d-bajar').addEventListener('click', () => { posY -= 0.1; actualizarPosicionEscena(); });
+      document.querySelector('#b3d-cerca').addEventListener('click', () => { posZ += 0.15; actualizarPosicionEscena(); });
+      document.querySelector('#b3d-lejos').addEventListener('click', () => { posZ -= 0.15; actualizarPosicionEscena(); });
+
+      document.querySelector('#b3d-abatir').addEventListener('click', () => toggleAbatimiento());
+    });
+
+    function setHerramienta(tipo) {
+      herramientaActual = tipo;
+      document.querySelector('#b3d-cubo').setAttribute('color', tipo === 'cubo' ? '#27ae60' : '#34495e');
+      document.querySelector('#txt-cubo').setAttribute('value', tipo === 'cubo' ? '[X] MODULO CUBO' : 'MODULO CUBO');
+
+      document.querySelector('#b3d-cuna').setAttribute('color', tipo === 'cuna' ? '#27ae60' : '#34495e');
+      document.querySelector('#txt-cuna').setAttribute('value', tipo === 'cuna' ? '[X] MODULO CUNA' : 'MODULO CUNA');
+
+      document.querySelector('#b3d-borrar').setAttribute('color', tipo === 'borrar' ? '#c0392b' : '#34495e');
+      document.querySelector('#txt-borrar').setAttribute('value', tipo === 'borrar' ? '[X] BORRAR BLOQUE' : 'BORRAR BLOQUE');
+    }
+
+    function colocarBloque(x, y, z) {
+      if (abatido) return;
+
+      const contenedor = document.querySelector('#contenedor-bloques');
+      let nuevoBloque;
+
+      if (herramientaActual === 'cubo') {
+        nuevoBloque = document.createElement('a-box');
+        nuevoBloque.setAttribute('width', TAMANO_BLOQUE);
+        nuevoBloque.setAttribute('height', TAMANO_BLOQUE);
+        nuevoBloque.setAttribute('depth', TAMANO_BLOQUE);
+        nuevoBloque.setAttribute('color', '#f39c12');
+      } else if (herramientaActual === 'cuna') {
+        nuevoBloque = document.createElement('a-cylinder');
+        nuevoBloque.setAttribute('segments-radial', '3');
+        nuevoBloque.setAttribute('radius', TAMANO_BLOQUE * 0.65);
+        nuevoBloque.setAttribute('height', TAMANO_BLOQUE);
+        nuevoBloque.setAttribute('rotation', '0 0 90');
+        nuevoBloque.setAttribute('color', '#e67e22');
+      }
+
+      nuevoBloque.setAttribute('position', `${x} ${y} ${z}`);
+      nuevoBloque.setAttribute('class', 'interactuable');
+
+      // Animación de resaltado al apuntar
+      nuevoBloque.setAttribute('animation__hover', 'property: scale; to: 1.08 1.08 1.08; startEvents: mouseenter; dur: 100');
+      nuevoBloque.setAttribute('animation__leave', 'property: scale; to: 1 1 1; startEvents: mouseleave; dur: 100');
+
+      nuevoBloque.addEventListener('click', (evt) => {
+        evt.stopPropagation();
+        if (herramientaActual === 'borrar') {
+          contenedor.removeChild(nuevoBloque);
+        } else {
+          // Apilar hacia arriba
+          const posActual = nuevoBloque.getAttribute('position');
+          colocarBloque(posActual.x, posActual.y + TAMANO_BLOQUE, posActual.z);
+        }
+      });
+
+      contenedor.appendChild(nuevoBloque);
+    }
+
+    function toggleAbatimiento() {
+      const ejePH = document.querySelector('#eje-ph');
+      const ejePPI = document.querySelector('#eje-ppi');
+      const ejePPD = document.querySelector('#eje-ppd');
+
+      if (!abatido) {
+        ejePH.setAttribute('animation', 'property: rotation; to: 90 0 0; dur: 1400; easing: easeInOutCubic');
+        ejePPI.setAttribute('animation', 'property: rotation; to: 0 -90 0; dur: 1400; easing: easeInOutCubic');
+        ejePPD.setAttribute('animation', 'property: rotation; to: 0 90 0; dur: 1400; easing: easeInOutCubic');
+        abatido = true;
+      } else {
+        ejePH.setAttribute('animation', 'property: rotation; to: 0 0 0; dur: 1400; easing: easeInOutCubic');
+        ejePPI.setAttribute('animation', 'property: rotation; to: 0 0 0; dur: 1400; easing: easeInOutCubic');
+        ejePPD.setAttribute('animation', 'property: rotation; to: 0 0 0; dur: 1400; easing: easeInOutCubic');
+        abatido = false;
+      }
+    }
+  </script>
+</body>
+</html>
